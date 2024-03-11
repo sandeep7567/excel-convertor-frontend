@@ -18,9 +18,8 @@ const App = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
 
-  console.log(data);
+  const navigate = useNavigate();
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,6 +39,13 @@ const App = () => {
       if (!success) {
         throw new Error("Failed to fetch data");
       }
+
+      console.log(artist.length === 0);
+
+      if (artist.length === 0) {
+        setHeader([]);
+        setData([]);
+      };
 
       const requiredData: ArtistData[] = artist.map(
         (art: any, index: number) => ({
@@ -74,7 +80,7 @@ const App = () => {
   };
 
   const onEditHandle = (id: string) => {
-    console.log(id);
+
     navigate(`/${id}`);
   };
 
@@ -103,6 +109,7 @@ const App = () => {
       if (!response.ok) {
         throw new Error("please upload valid excel file");
       }
+      console.log(response)
 
       await fetchData();
     } catch (error: any) {
@@ -197,7 +204,6 @@ const App = () => {
                   }}
                 >
                   {Object.values(item).map((value: any, index) => {
-                    console.log(value);
                     if (index === 1) return;
 
                     return (
