@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CONSTANT } from "./constant";
+import { useNavigate } from "react-router-dom";
 
 interface ArtistData {
   _id: string;
@@ -16,7 +17,10 @@ const App = () => {
   const [header, setHeader] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [disabled, setDisabled] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  console.log(data);
 
   const fetchData = async () => {
     setLoading(true);
@@ -37,13 +41,16 @@ const App = () => {
         throw new Error("Failed to fetch data");
       }
 
-      const requiredData: ArtistData[] = artist.map((art: any) => ({
-        _id: art?._id,
-        speciality: art?.speciality,
-        about: art?.about,
-        name: art?.name,
-        email: art?.email,
-      }));
+      const requiredData: ArtistData[] = artist.map(
+        (art: any, index: number) => ({
+          No: index + 1,
+          _id: art?._id,
+          speciality: art?.speciality,
+          about: art?.about,
+          name: art?.name,
+          email: art?.email,
+        })
+      );
 
       if (requiredData.length > 0) {
         const headers = Object.keys(requiredData[0]);
@@ -66,11 +73,18 @@ const App = () => {
     selectedFile && setFile(selectedFile);
   };
 
+  const onEditHandle = (id: string) => {
+    console.log(id);
+    navigate(`/${id}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setDisabled(true);
+    setIsSubmitting(true);
+
     if (!file) {
       setError("No file selected");
+      setIsSubmitting(false);
       return;
     }
 
@@ -87,47 +101,16 @@ const App = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to upload file");
+        throw new Error("please upload valid excel file");
       }
 
       await fetchData();
     } catch (error: any) {
       setError(error?.message || "An error occurred while uploading file");
     } finally {
-      setDisabled(false);
+      setIsSubmitting(false);
     }
   };
-
-  if (error) {
-    return (
-      <div
-        style={{
-          height: "100vh",
-          width: "100vw",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "1rem",
-        }}
-      >
-        <div>Error {error}</div>
-        <button
-          style={{
-            padding: "10px 20px",
-            borderRadius: "5px",
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-          }}
-          onClick={() => {
-            window?.location.reload();
-          }}
-        >
-          Refresh
-        </button>
-      </div>
-    );
-  }
 
   if (loading) {
     return <div>Loading.....</div>;
@@ -158,41 +141,51 @@ const App = () => {
             background: "#007bff",
             color: "#fff",
             border: "none",
+            cursor: "pointer",
           }}
-          disabled={disabled}
+          disabled={isSubmitting || !file}
         >
-          Upload
+          {isSubmitting ? "Uploading..." : "Upload"}
         </button>
       </form>
 
       {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
       {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
 
+      <br />
+      <hr />
+
       {data.length > 0 && (
         <div>
           <h2 style={{ textAlign: "center", marginTop: "40px" }}>
-            Fetched Data
+            Fetched Artist Sheet Data
           </h2>
           <p style={{ textAlign: "center", marginBottom: "20px" }}>
             Below is the data fetched from the backend:
           </p>
+
           <table
             style={{
               margin: "auto",
               borderCollapse: "collapse",
               border: "1px solid #ddd",
+              maxWidth: "1080px",
             }}
           >
             <thead>
               <tr style={{ background: "#007bff", color: "#fff" }}>
-                {header.map((key, i) => (
-                  <th
-                    key={i}
-                    style={{ padding: "10px", border: "1px solid #ddd" }}
-                  >
-                    {key}
-                  </th>
-                ))}
+                {header.map((key, i) => {
+                  if (i === 1) return;
+                  return (
+                    <th
+                      key={i}
+                      style={{ padding: "10px", border: "1px solid #ddd" }}
+                    >
+                      {key}
+                    </th>
+                  );
+                })}
+                <th style={{ padding: "10px", textAlign: "center" }}>...</th>
               </tr>
             </thead>
             <tbody>
@@ -203,14 +196,45 @@ const App = () => {
                     background: index % 2 === 0 ? "transparent" : "#f9f9f9",
                   }}
                 >
-                  {Object.values(item).map((value, index) => (
-                    <td
-                      key={index}
-                      style={{ padding: "10px", border: "1px solid #ddd" }}
-                    >
-                      {value}
+                  {Object.values(item).map((value: any, index) => {
+                    console.log(value);
+                    if (index === 1) return;
+
+                    return (
+                      <td
+                        key={index}
+                        style={{ padding: "10px", border: "1px solid #ddd" }}
+                      >
+                        {value}
+                      </td>
+                    );
+                  })}
+
+                  <td
+                    onClick={() => onEditHandle(item?._id)}
+                    style={{
+                      padding: "10px",
+                      textAlign: "center",
+                      border: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
+                  >
+                    edit
+                  </td>
+
+                  {/* {Object.values(item).map((value, index) => (
+                    <td key={index} style={{ padding: "10px", border: "1px solid #ddd" }} >
+                      <input
+                        key={index}
+                        type="text"
+                        name=""
+                        id=""
+                        value={value}
+                        onChange={e => e.target.value}
+                        style={{ padding: "10px", border: "1px solid #ddd" }}
+                      />
                     </td>
-                  ))}
+                  ))} */}
                 </tr>
               ))}
             </tbody>
